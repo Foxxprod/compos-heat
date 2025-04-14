@@ -13,8 +13,8 @@
 
 
 //------------------------DEFINITION DES IO----------------------------------//
-#define RxBLT 7 //rx blt
-#define TxBLT 6 //tx blt
+#define RxBLT 6 //rx blt
+#define TxBLT 7 //tx blt
 #define ONE_WIRE_BUS_WATERSENSOR 2 // Broche pour le DS18B20 temperature de l'eau compost
 #define ONE_WIRE_BUS_POOLSENSOR 4 // Broche pour le DS18B20 temperature de temperature piscine
 #define DHTPIN 5        // Broche numérique D8 où le capteur est connecté temperature et humiditée du compost
@@ -108,7 +108,10 @@ float getComposthumid() {
     return humidity;
 }
 
-
+//mesurer / renvoyer la mesure de la batterie (a faire)
+int getBatterylevel() {
+    return 100;
+}
 
 
 //Construction de la trame a envoyer a l'application
@@ -117,8 +120,9 @@ String trametx() {
     float PoolTemp = getPoolTemp();
     float CompostTemp = getCompostTemp();
     float CompostHumidity = getComposthumid();
+    int BatteryLevel = getBatterylevel();
 
-    String trametxdata = String(waterTemp) + ";" + String(PoolTemp) + ";" + String(CompostTemp) + ";" + String(CompostHumidity);
+    String trametxdata = "batterylevel:" + String(BatteryLevel) +";watertemp:" + String(waterTemp) + ";pooltemp:" + String(PoolTemp) + ";composttemp:" + String(CompostTemp) + ";composthumid:" + String(CompostHumidity)+";";
   
     return trametxdata;
 
