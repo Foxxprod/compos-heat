@@ -8,8 +8,9 @@
 #include <DallasTemperature.h> //interpreter temperature du capteur
 #include <SoftwareSerial.h> //module pour gerer le bluethoot
 #include <DHT.h> //module pour gerer la capteur temp air / humiditée
+#include <Wire.h> //gestion de l'ecran lcd
+#include "rgb_lcd.h" //gestion de l'ecran lcd
 //---------------------------------------------------------------------------//
-
 
 
 //------------------------DEFINITION DES IO----------------------------------//
@@ -30,9 +31,12 @@ DallasTemperature watersensor(&watersensorbus); //capteur temperature de l'eau
 DallasTemperature poolsensor(&poolsensorbus); //capteur temperature de l'eau
 SoftwareSerial blueToothSerial(RxBLT, TxBLT); //module bluethoot
 DHT temphumid(DHTPIN, DHTTYPE); // Initialisation du capteur DHT
+rgb_lcd lcd;
 //---------------------------------------------------------------------------//
 
-
+const int colorR = 150;
+const int colorG = 0;
+const int colorB = 150;
 
 ///////////////////////////////////////////////////////////////////////////////
 /////////////////////////FONTIONNEMENT DU CODE/////////////////////////////////
@@ -128,6 +132,23 @@ String trametx() {
 
 }
 
+//Construction des données pour mesures
+String mesure() {
+    float waterTemp = getWaterTemp();
+    float PoolTemp = getPoolTemp();
+    float CompostTemp = getCompostTemp();
+    float CompostHumidity = getComposthumid();
+
+    String mesuredata = String(microsToSeconds(micros())) + "\t" + String(waterTemp) + "\t" + String(CompostTemp) + "\t" + String(CompostHumidity);
+  
+    return mesuredata;
+
+}
+
+// Fonction pour convertir les microsecondes en secondes
+float microsToSeconds(unsigned long microsValue) {
+  return microsValue / 1000000.0;
+}
 
 //initialisation de la carte
 void setup() {
@@ -142,6 +163,9 @@ void setup() {
     setupBlueToothConnection();
     testBluetoothConnection();
 
+    lcd.begin(16, 2);
+    lcd.setRGB(colorR, colorG, colorB);
+
 
     
 
@@ -150,9 +174,12 @@ void setup() {
 
 void loop() {
 
-    Serial.println(trametx());
+    Serial.println(mesure());
     
-    delay(1000);
+    String temperature = "temp eau = "+  String(getWaterTemp());
+    lcd.print(temperature);
+    
+    delay(5000);
     
 
 }
