@@ -34,9 +34,9 @@ DHT temphumid(DHTPIN, DHTTYPE); // Initialisation du capteur DHT
 rgb_lcd lcd;
 //---------------------------------------------------------------------------//
 
-const int colorR = 150;
-const int colorG = 0;
-const int colorB = 150;
+const int colorR = 0;
+const int colorG = 200;
+const int colorB = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
 /////////////////////////FONTIONNEMENT DU CODE/////////////////////////////////
@@ -126,7 +126,7 @@ String trametx() {
     float CompostHumidity = getComposthumid();
     int BatteryLevel = getBatterylevel();
 
-    String trametxdata = "batterylevel:" + String(BatteryLevel) +";watertemp:" + String(waterTemp) + ";pooltemp:" + String(PoolTemp) + ";composttemp:" + String(CompostTemp) + ";composthumid:" + String(CompostHumidity)+";";
+    String trametxdata = "TX;batterylevel:" + String(BatteryLevel) +";watertemp:" + String(waterTemp) + ";pooltemp:" + String(PoolTemp) + ";composttemp:" + String(CompostTemp) + ";composthumid:" + String(CompostHumidity)+";$TX" ;
   
     return trametxdata;
 
@@ -174,10 +174,20 @@ void setup() {
 
 void loop() {
 
-    Serial.println(mesure());
     
-    String temperature = "temp eau = "+  String(getWaterTemp());
-    lcd.print(temperature);
+    Serial.println(trametx());
+    
+    String temperatureair = "temp eau = "+  String(getWaterTemp());
+    lcd.setCursor(0, 0);
+    lcd.print(temperatureair);
+
+    String temperaturecomp = "temp comp = "+  String(getCompostTemp());
+    lcd.setCursor(0, 1);
+    lcd.print(temperaturecomp);
+
+    
+
+    
     
     delay(5000);
     
