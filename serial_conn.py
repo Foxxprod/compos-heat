@@ -55,7 +55,6 @@ def receive_data_from_card(data):
                 key, value = part.split(":", 1)  # Diviser en clé et valeur
                 data_dict[key] = value  # Ajouter dans le dictionnaire avec la clé comme nom
 
-        print(data_dict)
         
         try:
             batterylevel = data_dict.get("batterylevel", None)

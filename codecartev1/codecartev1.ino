@@ -176,6 +176,8 @@ void loop() {
 
     
     Serial.println(trametx());
+    blueToothSerial.print(trametx());
+    
     
     String temperatureair = "temp eau = "+  String(getWaterTemp());
     lcd.setCursor(0, 0);
@@ -186,8 +188,16 @@ void loop() {
     lcd.print(temperaturecomp);
 
     
+    delay(1000);
 
-    
+
+    Serial.println(trametx());
+    blueToothSerial.print(trametx());
+
+    lcd.setCursor(0, 0);
+    lcd.print("  Compos'heat     ");
+    lcd.setCursor(0, 1);
+    lcd.print(" Lycee pravaz SI  ");
     
     delay(1000);
     
