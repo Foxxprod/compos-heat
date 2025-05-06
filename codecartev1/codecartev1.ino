@@ -4,6 +4,7 @@
 
 
 //------------------------IMPORT DES MODULES---------------------------------//
+#include <Arduino.h>
 #include <OneWire.h> //one wire pour capteures
 #include <DallasTemperature.h> //interpreter temperature du capteur
 #include <SoftwareSerial.h> //module pour gerer le bluethoot
@@ -34,9 +35,21 @@ DHT temphumid(DHTPIN, DHTTYPE); // Initialisation du capteur DHT
 rgb_lcd lcd;
 //---------------------------------------------------------------------------//
 
+
+//-----------------------DEFINITION DES CONSTANTES--------------------------//
+//CONSTANTES ECRAN RGB LCD
 const int colorR = 0;
 const int colorG = 200;
 const int colorB = 0;
+
+//CONSTANTES CONTROLE SHIELD MOTEUR POUR POMPE
+const int directionPin = 12;
+const int pwmPin = 3;
+const int brakePin = 9;
+bool directionState;
+
+int pumpstate = -1;
+int newpumpspeed = -1;
 
 ///////////////////////////////////////////////////////////////////////////////
 /////////////////////////FONTIONNEMENT DU CODE/////////////////////////////////
@@ -82,6 +95,65 @@ void testBluetoothConnection() {
     }
 }
 
+String getBluetoothData(){
+    String data = "";
+    
+    while (blueToothSerial.available()) {
+        char c = blueToothSerial.read();
+        data += c;
+        delay(2);
+    }
+
+    return data;
+}
+
+void receiveDataFromApp(){
+    // Récupérer les données Bluetooth
+    String data = getBluetoothData();
+    
+    // Cherche la première occurrence de RX et $RX dans le message
+    int startPos = data.indexOf("RX");
+    int endPos = data.indexOf("$RX");
+
+    // Si le message contient bien RX et $RX, et que RX est avant $RX
+    if (startPos != -1 && endPos != -1 && startPos < endPos) {
+        // Extraire les données entre "RX" et "$RX"
+        String extractedData = data.substring(startPos + 2, endPos);  // Exclure "RX" et "$RX"
+
+        // Diviser les données extraites par ';' pour obtenir les paires clé-valeur
+        int pos = 0;
+        while ((pos = extractedData.indexOf(';')) != -1) {
+            String entry = extractedData.substring(0, pos);
+            int separatorPos = entry.indexOf(':');
+            
+            if (separatorPos != -1) {
+                String key = entry.substring(0, separatorPos);   // Clé
+                String value = entry.substring(separatorPos + 1); // Valeur
+
+                // Si la clé est "pumpstate", extraire la valeur
+                if (key.equals("pumpstate")) {  // Utiliser equals() pour comparer les String
+                    pumpstate = value.toInt();  // Convertir la valeur en entier
+                }
+
+                // Si la clé est "newpumpspeed", extraire la valeur
+                if (key.equals("newpumpspeed")) {  // Utiliser equals() pour comparer les String
+                    newpumpspeed = value.toInt();  // Convertir la valeur en entier
+                }
+            }
+            
+            // Supprimer la partie traitée
+            extractedData = extractedData.substring(pos + 1);
+        }
+
+        // Si pumpstate est égal à 1, démarrer la pompe, sinon l'arrêter
+        if (pumpstate == 1) {
+            startPump();  // Démarre la pompe
+        } else {
+            stopPump();   // Arrête la pompe
+        }
+    }
+}
+
 //Recuperer la temperature de capteur de l'eau
 float getWaterTemp() {
     watersensor.requestTemperatures(); //demande lecture
@@ -118,6 +190,19 @@ int getBatterylevel() {
 }
 
 
+void startPump(){
+    digitalWrite(brakePin, LOW);
+    digitalWrite(directionPin, LOW);
+
+    analogWrite(pwmPin, 128);
+}
+
+void stopPump(){
+    digitalWrite(brakePin, HIGH);
+    digitalWrite(directionPin, LOW);
+
+    analogWrite(pwmPin, 0);
+}
 //Construction de la trame a envoyer a l'application
 String trametx() {
     float waterTemp = getWaterTemp();
@@ -157,8 +242,14 @@ void setup() {
     watersensor.begin();
     temphumid.begin();
 
+    //definition des pins module bluethoot
     pinMode(RxBLT, INPUT);
     pinMode(TxBLT, OUTPUT);
+
+    //definition des pins shield moteur
+    pinMode(directionPin, OUTPUT);
+    pinMode(pwmPin, OUTPUT);
+    pinMode(brakePin, OUTPUT);
 
     setupBlueToothConnection();
     testBluetoothConnection();
@@ -175,30 +266,31 @@ void setup() {
 void loop() {
 
     
+    //ENVOYE DE LA TRAME VIA BT ET SUR LE SERIAL
     Serial.println(trametx());
     blueToothSerial.print(trametx());
     
     
+    //AFFICHAGE DE LA TEMPERATURE DE L'EAU SUR L'ECRAN
     String temperatureair = "temp eau = "+  String(getWaterTemp());
     lcd.setCursor(0, 0);
     lcd.print(temperatureair);
 
+    //AFFICHAGE DE LA TEMPERATURE DU COMPOST SUR L'ECRAN
     String temperaturecomp = "temp comp = "+  String(getCompostTemp());
     lcd.setCursor(0, 1);
     lcd.print(temperaturecomp);
 
-    
+    //DELAI D'AFFICHAGE
     delay(1000);
 
-
-    Serial.println(trametx());
-    blueToothSerial.print(trametx());
-
+    //AFFICHAGE NOM DU PROJET
     lcd.setCursor(0, 0);
     lcd.print("  Compos'heat     ");
     lcd.setCursor(0, 1);
     lcd.print(" Lycee pravaz SI  ");
     
+    //DELAI D'AFFICHAGE
     delay(1000);
     
 
