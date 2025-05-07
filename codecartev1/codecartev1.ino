@@ -17,7 +17,7 @@
 //------------------------DEFINITION DES IO----------------------------------//
 #define RxBLT 6 //rx blt
 #define TxBLT 7 //tx blt
-#define ONE_WIRE_BUS_WATERSENSOR 2 // Broche pour le DS18B20 temperature de l'eau compost
+#define ONE_WIRE_BUS_WATERSENSOR 8// Broche pour le DS18B20 temperature de l'eau compost
 #define ONE_WIRE_BUS_POOLSENSOR 4 // Broche pour le DS18B20 temperature de temperature piscine
 #define DHTPIN 5        // Broche numérique D8 où le capteur est connecté temperature et humiditée du compost
 #define DHTTYPE DHT11   // Type du capteur de temp / humiditée de l'int compost
@@ -25,7 +25,6 @@
 
 
 
-//------------------------DECLARATION DES OBJET------------------------------//
 OneWire watersensorbus(ONE_WIRE_BUS_WATERSENSOR);
 OneWire poolsensorbus(ONE_WIRE_BUS_POOLSENSOR);
 DallasTemperature watersensor(&watersensorbus); //capteur temperature de l'eau
@@ -50,6 +49,7 @@ bool directionState;
 
 int pumpstate = -1;
 int newpumpspeed = -1;
+int pumpspeed = 128;
 
 ///////////////////////////////////////////////////////////////////////////////
 /////////////////////////FONTIONNEMENT DU CODE/////////////////////////////////
@@ -192,14 +192,14 @@ int getBatterylevel() {
 
 void startPump(){
     digitalWrite(brakePin, LOW);
-    digitalWrite(directionPin, LOW);
+    digitalWrite(directionPin, HIGH);
 
-    analogWrite(pwmPin, 128);
+    analogWrite(pwmPin, pumpspeed);
 }
 
 void stopPump(){
     digitalWrite(brakePin, HIGH);
-    digitalWrite(directionPin, LOW);
+    digitalWrite(directionPin, HIGH);
 
     analogWrite(pwmPin, 0);
 }
@@ -257,6 +257,10 @@ void setup() {
     lcd.begin(16, 2);
     lcd.setRGB(colorR, colorG, colorB);
 
+    
+
+    
+
 
     
 
@@ -269,6 +273,8 @@ void loop() {
     //ENVOYE DE LA TRAME VIA BT ET SUR LE SERIAL
     Serial.println(trametx());
     blueToothSerial.print(trametx());
+    receiveDataFromApp();
+    
     
     
     //AFFICHAGE DE LA TEMPERATURE DE L'EAU SUR L'ECRAN
@@ -292,6 +298,7 @@ void loop() {
     
     //DELAI D'AFFICHAGE
     delay(1000);
+    
     
 
 }
