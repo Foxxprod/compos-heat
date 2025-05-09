@@ -49,7 +49,14 @@ bool directionState;
 
 int pumpstate = -1;
 int newpumpspeed = -1;
-int pumpspeed = 128;
+int pumpspeed = 255;
+
+//CONSTANTES / VARIABLES POUR DEBITMETRE
+volatile unsigned int pulseCount = 0;
+float flowRate = 0.0;
+unsigned long lastMillis = 0;
+const float pulsesPerLiter = 450.0;  // changer pour notre capteur
+
 
 ///////////////////////////////////////////////////////////////////////////////
 /////////////////////////FONTIONNEMENT DU CODE/////////////////////////////////
@@ -190,6 +197,8 @@ int getBatterylevel() {
 }
 
 
+
+
 void startPump(){
     digitalWrite(brakePin, LOW);
     digitalWrite(directionPin, HIGH);
@@ -230,6 +239,11 @@ String mesure() {
 
 }
 
+void countPulse() {
+  pulseCount++;
+}
+
+
 // Fonction pour convertir les microsecondes en secondes
 float microsToSeconds(unsigned long microsValue) {
   return microsValue / 1000000.0;
@@ -256,6 +270,10 @@ void setup() {
 
     lcd.begin(16, 2);
     lcd.setRGB(colorR, colorG, colorB);
+
+    pinMode(2, INPUT_PULLUP);
+
+    attachInterrupt(digitalPinToInterrupt(2), countPulse, RISING);
 
     
 
@@ -286,16 +304,25 @@ void loop() {
     String temperaturecomp = "temp comp = "+  String(getCompostTemp());
     lcd.setCursor(0, 1);
     lcd.print(temperaturecomp);
-
-    //DELAI D'AFFICHAGE
-    delay(1000);
-
-    //AFFICHAGE NOM DU PROJET
-    lcd.setCursor(0, 0);
-    lcd.print("  Compos'heat     ");
-    lcd.setCursor(0, 1);
-    lcd.print(" Lycee pravaz SI  ");
     
+
+    if (millis() - lastMillis >= 1000) {  // Chaque seconde
+      detachInterrupt(digitalPinToInterrupt(2));  // Empêcher perturbation pendant calcul
+
+      // Débit en L/s
+      flowRate = pulseCount / pulsesPerLiter;
+
+      Serial.print("Débit : ");
+      Serial.print(flowRate);
+      Serial.println(" L/s");
+
+      pulseCount = 0;  // Réinitialiser pour la prochaine seconde
+      lastMillis = millis();
+
+      attachInterrupt(digitalPinToInterrupt(2), countPulse, RISING);  // Réactiver l'interruption
+
+    }
+
     //DELAI D'AFFICHAGE
     delay(1000);
     
