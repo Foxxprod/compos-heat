@@ -48,14 +48,19 @@ const int brakePin = 9;
 bool directionState;
 
 int pumpstate = -1;
-int newpumpspeed = -1;
+int newtemperature = -1;
 int pumpspeed = 255;
 
-//CONSTANTES / VARIABLES POUR DEBITMETRE
-volatile unsigned int pulseCount = 0;
-float flowRate = 0.0;
-unsigned long lastMillis = 0;
-const float pulsesPerLiter = 450.0;  // changer pour notre capteur
+
+const int pinDebit = 2; 
+volatile int nbImpulsions = 0;
+float debit = 0.0;
+unsigned long lastTime = 0;
+
+bool pompeEnMarche = false;
+
+
+
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -142,9 +147,9 @@ void receiveDataFromApp(){
                     pumpstate = value.toInt();  // Convertir la valeur en entier
                 }
 
-                // Si la clé est "newpumpspeed", extraire la valeur
-                if (key.equals("newpumpspeed")) {  // Utiliser equals() pour comparer les String
-                    newpumpspeed = value.toInt();  // Convertir la valeur en entier
+                // Si la clé est "newtemperature", extraire la valeur
+                if (key.equals("newtemperature")) {  // Utiliser equals() pour comparer les String
+                    newtemperature = value.toInt();  // Convertir la valeur en entier
                 }
             }
             
@@ -155,8 +160,10 @@ void receiveDataFromApp(){
         // Si pumpstate est égal à 1, démarrer la pompe, sinon l'arrêter
         if (pumpstate == 1) {
             startPump();  // Démarre la pompe
+            pompeEnMarche = true;
         } else {
             stopPump();   // Arrête la pompe
+            pompeEnMarche = false;
         }
     }
 }
@@ -220,7 +227,7 @@ String trametx() {
     float CompostHumidity = getComposthumid();
     int BatteryLevel = getBatterylevel();
 
-    String trametxdata = "TX;batterylevel:" + String(BatteryLevel) +";watertemp:" + String(waterTemp) + ";pooltemp:" + String(PoolTemp) + ";composttemp:" + String(CompostTemp) + ";composthumid:" + String(CompostHumidity)+";$TX" ;
+    String trametxdata = "TX;batterylevel:" + String(BatteryLevel) +";watertemp:" + String(waterTemp) + ";rate:" + String(debit) + ";composttemp:" + String(CompostTemp) + ";composthumid:" + String(CompostHumidity)+";$TX" ;
   
     return trametxdata;
 
@@ -239,8 +246,9 @@ String mesure() {
 
 }
 
-void countPulse() {
-  pulseCount++;
+
+void compterImpulsions() {
+  nbImpulsions++;  // Incrémenter le compteur d'impulsions
 }
 
 
@@ -271,9 +279,8 @@ void setup() {
     lcd.begin(16, 2);
     lcd.setRGB(colorR, colorG, colorB);
 
-    pinMode(2, INPUT_PULLUP);
-
-    attachInterrupt(digitalPinToInterrupt(2), countPulse, RISING);
+    pinMode(pinDebit, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(pinDebit), compterImpulsions, RISING);
 
     
 
@@ -292,6 +299,8 @@ void loop() {
     Serial.println(trametx());
     blueToothSerial.print(trametx());
     receiveDataFromApp();
+
+    Serial.println(newtemperature);
     
     
     
@@ -304,24 +313,36 @@ void loop() {
     String temperaturecomp = "temp comp = "+  String(getCompostTemp());
     lcd.setCursor(0, 1);
     lcd.print(temperaturecomp);
-    
 
-    if (millis() - lastMillis >= 1000) {  // Chaque seconde
-      detachInterrupt(digitalPinToInterrupt(2));  // Empêcher perturbation pendant calcul
-
-      // Débit en L/s
-      flowRate = pulseCount / pulsesPerLiter;
-
-      Serial.print("Débit : ");
-      Serial.print(flowRate);
-      Serial.println(" L/s");
-
-      pulseCount = 0;  // Réinitialiser pour la prochaine seconde
-      lastMillis = millis();
-
-      attachInterrupt(digitalPinToInterrupt(2), countPulse, RISING);  // Réactiver l'interruption
-
+    unsigned long currentTime = millis();
+    if (currentTime - lastTime >= 1000) {
+      float frequence = nbImpulsions / ((currentTime - lastTime) / 1000.0);
+  
+      // Calcul du débit en L/min
+      debit = frequence / 11.0;  // Conversion de la fréquence en débit (L/min)
+      
+      
+      // Réinitialiser le compteur d'impulsions et mettre à jour le dernier temps
+      nbImpulsions = 0;
+      lastTime = currentTime;
     }
+
+    float tempEau = getWaterTemp();
+    
+    if (tempEau <= newtemperature) {
+    // Si la température est inférieure ou égale au seuil et que la pompe est arrêtée
+    if (!pompeEnMarche) {
+      startPump();          // Active la pompe
+      pompeEnMarche = true;   // Met à jour l'état
+    }
+  } else {
+    // Si la température est au-dessus du seuil et que la pompe est en marche
+    if (pompeEnMarche) {
+      stopPump();           // Arrête la pompe
+      pompeEnMarche = false;  // Met à jour l'état
+    }
+  }
+   
 
     //DELAI D'AFFICHAGE
     delay(1000);
