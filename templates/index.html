@@ -57,7 +57,7 @@
         #lineChart {
             width: 100%;
             height: auto;
-            max-width: 1200px;
+            max-width: 1350px;
             max-height: 360px;
             margin: 0 auto;
         }
@@ -104,12 +104,24 @@
         font-size: 18px;
     }
         
+    .logo {
+            height: 120px;
+            margin-right: 10px;
+            margin-left: 10px;
+            background-color: white;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+
     </style>
 </head>
 <body>
     <div class="container">
         <center><h1>Données instantanées</h1></center>
         <div class="gauges">
+
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" class="logo">
 
             <div class="gauge-container">
                 <canvas id="gauge_water" width="180" height="180"></canvas>
