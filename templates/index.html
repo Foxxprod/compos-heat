@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard Température</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+            background: #121212;
+            color: #ffffff;
+        }
+    
+        h1, h2 {
+            color: #ffffff;
+        }
+    
+        .gauges {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+    
+        .gauge-container {
+            position: relative;
+        }
+    
+        canvas {
+            background: #1e1e1e;
+            padding: 10px;
+            border-radius: 12px;
+            box-shadow: 0 0 0px rgba(255,255,255,0.1);
+        }
+    
+        .gauge-value {
+            position: absolute;
+            top: 57%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20px;
+            font-weight: bold;
+            color: #ffffff;
+        }
+    
+        .warning-message {
+            text-align: center;
+            font-size: 16px;
+            color: red;
+            margin-top: 0px;
+        }
+    
+        #lineChart {
+            width: 100%;
+            height: auto;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+    
+        .logo {
+            height: 120px;
+            margin-right: 10px;
+            margin-left: 10px;
+            background-color: white;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .container {
+            background: linear-gradient(135deg, #1b2f1b, #2f2f2f, #1a1a1a, #3b2e2a);
+            border-radius: 20px;
+            padding: 20px;
+            color: #e0e0e0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            max-width: 800px;
+            margin: 10px auto;
+            font-family: 'Segoe UI', sans-serif;
+            transition: all 0.3s ease-in-out;
+        }
+
+        
+    </style>
+</head>
+<body>
+    <div class="container">
+    <center><h1>Données instantanées</h1></center>
+    <div class="gauges">
+
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" class="logo">
+
+
+        <div class="gauge-container">
+            <canvas id="gauge_water" width="180" height="180"></canvas>
+            <div class="gauge-value" id="value_water">0°C</div>
+        </div>
+        <div class="gauge-container">
+            <canvas id="gauge_pool" width="180" height="180"></canvas>
+            <div class="gauge-value" id="value_pool">0°C</div>
+        </div>
+        <div class="gauge-container">
+            <canvas id="gauge_compost" width="180" height="180"></canvas>
+            <div class="gauge-value" id="value_compost">0°C</div>
+        </div>
+        <div class="gauge-container">
+            <canvas id="gauge_humid" width="180" height="180"></canvas>
+            <div class="gauge-value" id="value_humid">0%</div>
+            <div class="warning-message" id="warning_humid"></div>
+        </div>
+        <div class="gauge-container">
+            <canvas id="gauge_battery" width="180" height="180"></canvas>
+            <div class="gauge-value" id="value_battery">0%</div>
+        </div>
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" class="logo">
+    </div>
+</div>
+
+    <center><h2>Historique des données</h2></center>
+    <canvas id="lineChart"></canvas>
+</body>
+</html>

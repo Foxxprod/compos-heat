@@ -331,15 +331,16 @@ void loop() {
     
     if (tempEau <= newtemperature) {
     // Si la température est inférieure ou égale au seuil et que la pompe est arrêtée
-    if (!pompeEnMarche) {
-      startPump();          // Active la pompe
-      pompeEnMarche = true;   // Met à jour l'état
+    if (pompeEnMarche == false) {
+        pompeEnMarche = true; // Met à jour l'état
+        startPump(); // Démarre la pompe
+
     }
   } else {
     // Si la température est au-dessus du seuil et que la pompe est en marche
-    if (pompeEnMarche) {
-      stopPump();           // Arrête la pompe
-      pompeEnMarche = false;  // Met à jour l'état
+    if (pompeEnMarche == true) {
+        pompeEnMarche = false;  // Met à jour l'état
+        stopPump();           // Arrête la pompe
     }
   }
    

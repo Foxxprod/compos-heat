@@ -1,13 +1,13 @@
-import serial, re, threading
+import serial, re, threading, random
 
 serial_read_on = False
 
 #definition des données de la carte arduino
-watertemp = -127
-pooltemp = -127
-composttemp = -127
-composthumid = -127
-batterylevel = 100
+watertemp = 29
+rate = 1
+composttemp = 64
+composthumid = 50
+batterylevel = 36
 
 
 
@@ -40,7 +40,7 @@ def stop_serial_read():
     serial_read_on = False
 
 def receive_data_from_card(data):
-    global watertemp, pooltemp, composttemp, composthumid, batterylevel
+    global watertemp, rate, composttemp, composthumid, batterylevel
 
     try:
 
@@ -59,13 +59,13 @@ def receive_data_from_card(data):
         try:
             batterylevel = data_dict.get("batterylevel", None)
             watertemp = data_dict.get("watertemp", None)
-            pooltemp = data_dict.get("pooltemp", None)
+            rate = data_dict.get("rate", None)
             composttemp = data_dict.get("composttemp", None)
             composthumid = data_dict.get("composthumid", None)
         except ValueError:
             batterylevel = -127
             watertemp = -127
-            pooltemp = -127
+            rate = -127
             composttemp = -127
             composthumid = -127
             print("Impossible de lire les données recues depuis la carte du compost, affectation des valeurs par defaut")
@@ -75,15 +75,30 @@ def receive_data_from_card(data):
 
 
 def get_card_data():
+    global watertemp, rate, composttemp, composthumid, batterylevel
+
+    return watertemp, rate, composttemp, composthumid, batterylevel
+
+
+def get_card_data_test():
     global watertemp, pooltemp, composttemp, composthumid, batterylevel
+
+    # Générer des données aléatoires dans des plages réalistes
+    watertemp = round(random.uniform(15, 30), 2)  # Température de l'eau entre 15°C et 30°C
+    pooltemp = round(random.uniform(18, 28), 2)   # Température de la piscine entre 18°C et 28°C
+    composttemp = round(random.uniform(20, 60), 2) # Température du compost entre 20°C et 60°C
+    composthumid = round(random.uniform(30, 80), 2) # Humidité du compost entre 30% et 80%
+    batterylevel = round(random.uniform(20, 100), 2) # Niveau de la batterie entre 20% et 100%
 
     return watertemp, pooltemp, composttemp, composthumid, batterylevel
 
-
 if __name__ == "__main__":
+    """
     start_serial_read('COM3')
     import time
     while True:
         print(get_card_data())
 
         time.sleep(1)
+
+    """
