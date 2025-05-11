@@ -28,7 +28,7 @@ def api_temperatures():
         "batterylevel": float(batterylevel)
     })
 
-# 🔁 Nouvelle route pour démarrer la pompe
+
 @app.route('/api/startpump', methods=['POST'])
 def api_startpump():
     try:
@@ -37,7 +37,7 @@ def api_startpump():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-# 🔁 Nouvelle route pour arrêter la pompe
+
 @app.route('/api/stoppump', methods=['POST'])
 def api_stoppump():
     try:
@@ -46,7 +46,7 @@ def api_stoppump():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-# 🔁 Nouvelle route pour mettre à jour la commande
+
 @app.route('/api/command', methods=['POST'])
 def api_command():
     try:

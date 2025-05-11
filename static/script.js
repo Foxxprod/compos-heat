@@ -122,8 +122,8 @@ window.onload = () => {
             labels: [],
             datasets: [
                 { label: 'Eau', borderColor: 'blue', data: [], fill: false },
-                { label: 'Piscine', borderColor: 'blue', data: [], fill: false },
-                { label: 'Compost', borderColor: 'green', data: [], fill: false }
+                { label: 'Compost', borderColor: 'green', data: [], fill: false },
+                { label: 'Debit', borderColor: 'red', data: [], fill: false }
             ]
         },
         options: {
