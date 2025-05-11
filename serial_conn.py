@@ -3,16 +3,21 @@ import serial, re, threading, random
 serial_read_on = False
 
 #definition des données de la carte arduino
-watertemp = 29
-rate = 1
-composttemp = 64
-composthumid = 50
-batterylevel = 36
+watertemp = -127
+rate = -127
+composttemp = -127
+composthumid = -127
+batterylevel = 100
+
+def open_serial(port):
+    global ser
+    ser = serial.Serial(port, 9600, timeout=1)
+    print("Port serial ouvert")
+    
 
 
-
-def serial_read(port):
-    ser = serial.Serial(port, 9600, timeout=1) 
+def serial_read():
+    
     pattern = re.compile(r'TX;.*?\$TX')
     while serial_read_on:
         try:
@@ -29,10 +34,10 @@ def serial_read(port):
             print("Erreur :", e)
 
 
-def start_serial_read(port):
+def start_serial_read():
     global serial_read_on
     serial_read_on = True
-    serial_thread = threading.Thread(target=serial_read, args=(port,))
+    serial_thread = threading.Thread(target=serial_read)
     serial_thread.start()
 
 def stop_serial_read():
@@ -91,6 +96,26 @@ def get_card_data_test():
     batterylevel = round(random.uniform(20, 100), 2) # Niveau de la batterie entre 20% et 100%
 
     return watertemp, pooltemp, composttemp, composthumid, batterylevel
+
+def startpump():
+    global rate, ser
+    if rate == 0:
+        command = "startpump"
+        ser.write(command.encode('ascii'))
+        
+
+def stoppump():
+    global rate, ser
+    if rate > 0:
+        command = "stoppump"
+        ser.write(command.encode('ascii'))
+
+def updatecommand(value):
+    global rate, ser
+    command = f"updatecommand:{value}"
+    ser.write(command.encode('ascii'))
+
+
 
 if __name__ == "__main__":
     """

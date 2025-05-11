@@ -138,3 +138,55 @@ window.onload = () => {
 
     setInterval(fetchAndUpdate, 1000);
 };
+
+function startSystem() {
+    fetch('/api/startpump', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Pompe démarrée :', data);
+            alert("Système lancé !");
+        })
+        .catch(error => {
+            console.error('Erreur de démarrage :', error);
+            alert("Erreur lors du démarrage !");
+        });
+}
+
+// Fonction appelée quand on clique sur "Arrêter le système"
+function stopSystem() {
+    fetch('/api/stoppump', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Pompe arrêtée :', data);
+            alert("Système arrêté !");
+        })
+        .catch(error => {
+            console.error('Erreur d\'arrêt :', error);
+            alert("Erreur lors de l'arrêt !");
+        });
+}
+
+// Fonction appelée à chaque mouvement du slider
+function updateSliderValue(value) {
+    document.getElementById("sliderValue").textContent = value;
+}
+
+// Fonction appelée quand on clique sur "Mettre à jour la commande"
+function sendCommand() {
+    const value = document.getElementById("slider").value;
+
+    fetch('/api/command', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ value: parseInt(value) })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Réponse:", data);
+    })
+    .catch(error => {
+        console.error("Erreur lors de l'envoi de la commande :", error);
+    });
+}

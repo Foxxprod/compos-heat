@@ -168,6 +168,30 @@ void receiveDataFromApp(){
     }
 }
 
+
+void reiceiveDataFromWeb() {
+    if (Serial.available() > 0) { // Si des données sont disponibles
+      String command = Serial.readStringUntil('\n');
+      command.trim();
+  
+      if (command.startsWith("startpump")) {
+        startpump();
+      }
+      else if (command.startsWith("stoppump")) {
+        stoppump();
+      }
+      else if (command.startsWith("updatecommand")) {
+        int tempIndex = command.indexOf(":") + 1;
+        String tempValue = command.substring(tempIndex);
+        newtemperature = tempValue.toFloat(); // Convertir en float
+      }
+      else {
+        Serial.println("Commande non reconnue");
+      }
+    }
+  }
+
+
 //Recuperer la temperature de capteur de l'eau
 float getWaterTemp() {
     watersensor.requestTemperatures(); //demande lecture
@@ -299,6 +323,7 @@ void loop() {
     Serial.println(trametx());
     blueToothSerial.print(trametx());
     receiveDataFromApp();
+    reiceiveDataFromWeb();
 
     Serial.println(newtemperature);
     
@@ -313,6 +338,9 @@ void loop() {
     String temperaturecomp = "temp comp = "+  String(getCompostTemp());
     lcd.setCursor(0, 1);
     lcd.print(temperaturecomp);
+
+    receiveDataFromApp();
+    reiceiveDataFromWeb();
 
     unsigned long currentTime = millis();
     if (currentTime - lastTime >= 1000) {
