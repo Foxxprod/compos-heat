@@ -1,22 +1,21 @@
-import serial, re, threading, random
+import serial
+import re
+import threading
+import random
+import json
+import time
 
 serial_read_on = False
 
-#definition des données de la carte arduino
+# Définition des données de la carte Arduino
 watertemp = -127
 rate = -127
 composttemp = -127
 composthumid = -127
 batterylevel = 100
 
-def open_serial(port):
-    global ser
+def serial_read(port):
     ser = serial.Serial(port, 9600, timeout=1)
-    print("Port serial ouvert")
-    
-
-
-def serial_read():
     
     pattern = re.compile(r'TX;.*?\$TX')
     while serial_read_on:
@@ -34,10 +33,10 @@ def serial_read():
             print("Erreur :", e)
 
 
-def start_serial_read():
+def start_serial_read(port):
     global serial_read_on
     serial_read_on = True
-    serial_thread = threading.Thread(target=serial_read)
+    serial_thread = threading.Thread(target=serial_read, args=(port,))
     serial_thread.start()
 
 def stop_serial_read():
@@ -67,16 +66,20 @@ def receive_data_from_card(data):
             rate = data_dict.get("rate", None)
             composttemp = data_dict.get("composttemp", None)
             composthumid = data_dict.get("composthumid", None)
+
+            # Sauvegarde des données dans un fichier JSON
+            save_data_to_json()
+
         except ValueError:
             batterylevel = -127
             watertemp = -127
             rate = -127
             composttemp = -127
             composthumid = -127
-            print("Impossible de lire les données recues depuis la carte du compost, affectation des valeurs par defaut")
+            print("Impossible de lire les données reçues depuis la carte du compost, affectation des valeurs par défaut")
         
     except Exception as e:
-        print("Erreur lors de la recuperation des données depuis le module compost:", e)
+        print("Erreur lors de la récupération des données depuis le module compost:", e)
 
 
 def get_card_data():
@@ -115,15 +118,25 @@ def updatecommand(value):
     command = f"updatecommand:{value}"
     ser.write(command.encode('ascii'))
 
-
+def save_data_to_json():
+    data_dict = {
+        "watertemp": watertemp,
+        "rate": rate,
+        "composttemp": composttemp,
+        "composthumid": composthumid,
+        "batterylevel": batterylevel
+    }
+    
+    try:
+        with open("card_data.json", "w") as json_file:
+            json.dump(data_dict, json_file, indent=4)
+        print("Données enregistrées dans card_data.json")
+    except Exception as e:
+        print("Erreur lors de l'enregistrement dans le fichier JSON:", e)
 
 if __name__ == "__main__":
-    """
-    start_serial_read('COM3')
-    import time
+    start_serial_read('/dev/tty.usbmodem143201')
+    startpump()
     while True:
         print(get_card_data())
-
         time.sleep(1)
-
-    """

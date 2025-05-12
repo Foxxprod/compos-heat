@@ -58,7 +58,7 @@ float debit = 0.0;
 unsigned long lastTime = 0;
 
 bool pompeEnMarche = false;
-
+int command = 0;
 
 
 
@@ -151,6 +151,10 @@ void receiveDataFromApp(){
                 if (key.equals("newtemperature")) {  // Utiliser equals() pour comparer les String
                     newtemperature = value.toInt();  // Convertir la valeur en entier
                 }
+
+                if (key.equals("command")) {  // Utiliser equals() pour comparer les String
+                    command = value.toInt();  // Convertir la valeur en entier
+                }
             }
             
             // Supprimer la partie traitée
@@ -158,13 +162,15 @@ void receiveDataFromApp(){
         }
 
         // Si pumpstate est égal à 1, démarrer la pompe, sinon l'arrêter
-        if (pumpstate == 1) {
+        if (pumpstate == 1 && !pompeEnMarche && command == 0) {
             startPump();  // Démarre la pompe
             pompeEnMarche = true;
-        } else {
+        } else if (pumpstate == 0 && pompeEnMarche && command == 0) {
             stopPump();   // Arrête la pompe
             pompeEnMarche = false;
         }
+
+        
     }
 }
 
@@ -175,10 +181,10 @@ void reiceiveDataFromWeb() {
       command.trim();
   
       if (command.startsWith("startpump")) {
-        startpump();
+        startPump();
       }
       else if (command.startsWith("stoppump")) {
-        stoppump();
+        stopPump();
       }
       else if (command.startsWith("updatecommand")) {
         int tempIndex = command.indexOf(":") + 1;
@@ -340,7 +346,7 @@ void loop() {
     lcd.print(temperaturecomp);
 
     receiveDataFromApp();
-    reiceiveDataFromWeb();
+    //reiceiveDataFromWeb();
 
     unsigned long currentTime = millis();
     if (currentTime - lastTime >= 1000) {
@@ -357,6 +363,9 @@ void loop() {
 
     float tempEau = getWaterTemp();
     
+
+    
+    if (command == 1) {
     if (tempEau <= newtemperature) {
     // Si la température est inférieure ou égale au seuil et que la pompe est arrêtée
     if (pompeEnMarche == false) {
@@ -371,10 +380,13 @@ void loop() {
         stopPump();           // Arrête la pompe
     }
   }
+    }
+  
+  
    
 
     //DELAI D'AFFICHAGE
-    delay(1000);
+    delay(100);
     
     
 
