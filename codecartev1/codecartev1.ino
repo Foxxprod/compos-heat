@@ -325,7 +325,7 @@ void loop() {
     Serial.println(trametx());
     blueToothSerial.print(trametx());
     receiveDataFromApp();
-    //reiceiveDataFromWeb();
+    reiceiveDataFromWeb();
 
     Serial.println(newtemperature);
     

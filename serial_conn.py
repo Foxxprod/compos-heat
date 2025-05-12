@@ -136,6 +136,7 @@ def save_data_to_json():
 
 if __name__ == "__main__":
     start_serial_read('/dev/tty.usbmodem141101')
+    startpump()
     while True:
         print(get_card_data())
         time.sleep(1)
