@@ -122,8 +122,8 @@ window.onload = () => {
             labels: [],
             datasets: [
                 { label: 'Eau', borderColor: 'blue', data: [], fill: false },
-                { label: 'Compost', borderColor: 'green', data: [], fill: false },
-                { label: 'Debit', borderColor: 'red', data: [], fill: false }
+                { label: 'Debit', borderColor: 'green', data: [], fill: false },
+                { label: 'compost', borderColor: 'red', data: [], fill: false }
             ]
         },
         options: {
@@ -144,7 +144,7 @@ function startSystem() {
         .then(response => response.json())
         .then(data => {
             console.log('Pompe démarrée :', data);
-            alert("Système lancé !");
+            
         })
         .catch(error => {
             console.error('Erreur de démarrage :', error);
@@ -158,7 +158,7 @@ function stopSystem() {
         .then(response => response.json())
         .then(data => {
             console.log('Pompe arrêtée :', data);
-            alert("Système arrêté !");
+            
         })
         .catch(error => {
             console.error('Erreur d\'arrêt :', error);
@@ -188,5 +188,6 @@ function sendCommand() {
     })
     .catch(error => {
         console.error("Erreur lors de l'envoi de la commande :", error);
+        alert("Erreur lors de l'arrêt !", error);
     });
 }

@@ -158,13 +158,15 @@ void receiveDataFromApp(){
         }
 
         // Si pumpstate est égal à 1, démarrer la pompe, sinon l'arrêter
-        if (pumpstate == 1) {
+        if (pumpstate == 1 && !pompeEnMarche) {
             startPump();  // Démarre la pompe
             pompeEnMarche = true;
-        } else {
+        } else if (pumpstate == 0 && pompeEnMarche) {
             stopPump();   // Arrête la pompe
             pompeEnMarche = false;
         }
+
+        
     }
 }
 
@@ -175,10 +177,10 @@ void reiceiveDataFromWeb() {
       command.trim();
   
       if (command.startsWith("startpump")) {
-        startpump();
+        startPump();
       }
       else if (command.startsWith("stoppump")) {
-        stoppump();
+        stopPump();
       }
       else if (command.startsWith("updatecommand")) {
         int tempIndex = command.indexOf(":") + 1;
@@ -323,7 +325,7 @@ void loop() {
     Serial.println(trametx());
     blueToothSerial.print(trametx());
     receiveDataFromApp();
-    reiceiveDataFromWeb();
+    //reiceiveDataFromWeb();
 
     Serial.println(newtemperature);
     
@@ -340,7 +342,7 @@ void loop() {
     lcd.print(temperaturecomp);
 
     receiveDataFromApp();
-    reiceiveDataFromWeb();
+    //reiceiveDataFromWeb();
 
     unsigned long currentTime = millis();
     if (currentTime - lastTime >= 1000) {
@@ -357,6 +359,9 @@ void loop() {
 
     float tempEau = getWaterTemp();
     
+
+    
+
     if (tempEau <= newtemperature) {
     // Si la température est inférieure ou égale au seuil et que la pompe est arrêtée
     if (pompeEnMarche == false) {
@@ -371,6 +376,7 @@ void loop() {
         stopPump();           // Arrête la pompe
     }
   }
+  
    
 
     //DELAI D'AFFICHAGE
