@@ -135,7 +135,7 @@ def save_data_to_json():
         print("Erreur lors de l'enregistrement dans le fichier JSON:", e)
 
 if __name__ == "__main__":
-    start_serial_read('/dev/tty.usbmodem141101')
+    start_serial_read('/dev/tty.usbmodem143201')
     startpump()
     while True:
         print(get_card_data())

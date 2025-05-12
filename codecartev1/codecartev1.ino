@@ -58,7 +58,7 @@ float debit = 0.0;
 unsigned long lastTime = 0;
 
 bool pompeEnMarche = false;
-
+int command = 0;
 
 
 
@@ -151,6 +151,10 @@ void receiveDataFromApp(){
                 if (key.equals("newtemperature")) {  // Utiliser equals() pour comparer les String
                     newtemperature = value.toInt();  // Convertir la valeur en entier
                 }
+
+                if (key.equals("command")) {  // Utiliser equals() pour comparer les String
+                    command = value.toInt();  // Convertir la valeur en entier
+                }
             }
             
             // Supprimer la partie traitée
@@ -158,10 +162,10 @@ void receiveDataFromApp(){
         }
 
         // Si pumpstate est égal à 1, démarrer la pompe, sinon l'arrêter
-        if (pumpstate == 1 && !pompeEnMarche) {
+        if (pumpstate == 1 && !pompeEnMarche && command == 0) {
             startPump();  // Démarre la pompe
             pompeEnMarche = true;
-        } else if (pumpstate == 0 && pompeEnMarche) {
+        } else if (pumpstate == 0 && pompeEnMarche && command == 0) {
             stopPump();   // Arrête la pompe
             pompeEnMarche = false;
         }
@@ -361,7 +365,7 @@ void loop() {
     
 
     
-
+    if (command == 1) {
     if (tempEau <= newtemperature) {
     // Si la température est inférieure ou égale au seuil et que la pompe est arrêtée
     if (pompeEnMarche == false) {
@@ -376,11 +380,13 @@ void loop() {
         stopPump();           // Arrête la pompe
     }
   }
+    }
+  
   
    
 
     //DELAI D'AFFICHAGE
-    delay(1000);
+    delay(100);
     
     
 
