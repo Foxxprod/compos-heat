@@ -42,7 +42,6 @@ function updateGauge(chart, value, max = 100) {
 function updateLineChart() {
     lineChart.data.labels = timeData;
     lineChart.data.datasets[0].data = tempSeries.watertemp;
-    lineChart.data.datasets[1].data = tempSeries.pooltemp;
     lineChart.data.datasets[2].data = tempSeries.composttemp;
     lineChart.update();
 }
@@ -122,8 +121,8 @@ window.onload = () => {
             labels: [],
             datasets: [
                 { label: 'Eau', borderColor: 'blue', data: [], fill: false },
-                { label: 'Debit', borderColor: 'green', data: [], fill: false },
-                { label: 'compost', borderColor: 'red', data: [], fill: false }
+                { label: '', borderColor: 'black', data: [], fill: false },
+                { label: 'compost', borderColor: 'green', data: [], fill: false }
             ]
         },
         options: {
