@@ -60,6 +60,10 @@ unsigned long lastTime = 0;
 bool pompeEnMarche = false;
 int command = 0;
 
+//POTENTIOMMETRE DE COMMANDE 
+const int potPin = A0; 
+int potValue = 0; 
+
 
 
 
@@ -287,6 +291,15 @@ float microsToSeconds(unsigned long microsValue) {
   return microsValue / 1000000.0;
 }
 
+void getPotValue() {
+    potValue = analogRead(potPin);
+    Serial.println(potValue);
+}
+
+
+
+
+
 //initialisation de la carte
 void setup() {
     Serial.begin(9600);
@@ -331,7 +344,7 @@ void loop() {
     receiveDataFromApp();
     reiceiveDataFromWeb();
 
-    Serial.println(newtemperature);
+    getPotValue();
     
     
     
@@ -340,13 +353,17 @@ void loop() {
     lcd.setCursor(0, 0);
     lcd.print(temperatureair);
 
+
     //AFFICHAGE DE LA TEMPERATURE DU COMPOST SUR L'ECRAN
     String temperaturecomp = "temp comp = "+  String(getCompostTemp());
     lcd.setCursor(0, 1);
     lcd.print(temperaturecomp);
 
+
     receiveDataFromApp();
     //reiceiveDataFromWeb();
+
+
 
     unsigned long currentTime = millis();
     if (currentTime - lastTime >= 1000) {
@@ -362,6 +379,8 @@ void loop() {
     }
 
     float tempEau = getWaterTemp();
+
+
     
 
     
@@ -385,8 +404,7 @@ void loop() {
   
    
 
-    //DELAI D'AFFICHAGE
-    delay(100);
+    
     
     
 
