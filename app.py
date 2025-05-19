@@ -11,7 +11,7 @@ start_time = time.time()
 # Fonction pour lire les données du fichier JSON
 def read_data_from_json():
     try:
-        with open("card_data.json", "r") as json_file:
+        with open("data/card_data.json", "r") as json_file:
             data = json.load(json_file)
             return data
     except Exception as e:

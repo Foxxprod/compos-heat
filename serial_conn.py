@@ -128,7 +128,7 @@ def save_data_to_json():
     }
     
     try:
-        with open("card_data.json", "w") as json_file:
+        with open("data/card_data.json", "w") as json_file:
             json.dump(data_dict, json_file, indent=4)
         print("Données enregistrées dans card_data.json")
     except Exception as e:
