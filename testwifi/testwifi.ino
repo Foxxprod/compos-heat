@@ -1,8 +1,8 @@
 #include <WiFiNINA.h>
 #include <ArduinoHttpClient.h>
 
-const char* ssid = "WIFI-FAMILLE";
-const char* password = "Tit0u@n2";
+const char* ssid = "SI-eleve";
+const char* password = "AccessSI";
 
 // Remplace l'IP par ton domaine
 const char* serverAddress = "composheat.cloud"; 

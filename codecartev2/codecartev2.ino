@@ -10,6 +10,8 @@
 #include <DHT.h> //module pour gerer la capteur temp air / humiditée
 #include <Wire.h> //gestion de l'ecran lcd
 #include "rgb_lcd.h" //gestion de l'ecran lcd
+#include <SPI.h>
+#include <WiFiNINA.h>
 //---------------------------------------------------------------------------//
 
 
@@ -28,6 +30,7 @@ DallasTemperature watersensor(&watersensorbus); //capteur temperature de l'eau
 DallasTemperature poolsensor(&poolsensorbus); //capteur temperature de l'eau
 DHT temphumid(DHTPIN, DHTTYPE); // Initialisation du capteur DHT
 rgb_lcd lcd;
+WiFiClient client;
 //---------------------------------------------------------------------------//
 
 
@@ -59,8 +62,16 @@ int command = 0;
 //POTENTIOMMETRE DE COMMANDE 
 const int potPin = A0; 
 int potValue = 0; 
+float commandepot = 0;
+bool commandpoton = false;
 
 
+//WIFI
+char ssid[] = "SI-eleve";         // Nom du réseau Wi-Fi
+char pass[] = "AccessSI"; // Mot de passe du Wi-Fi
+
+char server[] = "composheat.cloud"; // Serveur
+int port = 80;                      // Port HTTP
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -289,11 +300,125 @@ float microsToSeconds(unsigned long microsValue) {
 
 void getPotValue() {
     potValue = analogRead(potPin);
-    Serial.println(potValue);
+    float commandepot = 10 + (potValue / 1023.0) * (40 - 10);
+    
 }
 
 
+void changecommandpotmode() {
+    if (commandpoton == false) {
+        command = 1;
+        commandpoton = true;
+        
+    } else {
+        command = 0;
+        commandpoton = false;
 
+    }
+
+
+}
+
+String getCommandState() {
+    String message = "";
+
+    if (command == 1) {
+        message = "CMD:APP  TEMP=" + String(newtemperature);
+    } else if (commandpoton == true) {
+        message = "CMD:UC TEMP=" + String(newtemperature) + "º";
+    } else if (command == 0 && commandpoton == false) {
+        message = "CMD:OFF TEMP=OFF";
+    }
+
+    return message;
+}
+String getTemperatureData(){
+
+    String message = "EAU="+  String(getWaterTemp()) + " CMP="+ String(getCompostTemp());
+    return message;
+}
+
+void UpdateScreen() {
+    
+    //afficher les données de temperatures
+    lcd.setCursor(0, 0);
+    lcd.print(getTemperatureData());
+
+    //afficher les données sur la commande
+    lcd.setCursor(0, 1);
+    lcd.print(getCommandState());
+
+}
+
+void BluetoothUpdate(){
+    Serial1.print(trametx());
+    receiveDataFromApp();
+}
+
+void connectToWiFi() {
+  Serial.print("Connexion au réseau Wi-Fi");
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    WiFi.begin(ssid, pass);
+    delay(2000);
+  }
+  Serial.println("\nConnecté !");
+  Serial.print("Adresse IP : ");
+  Serial.println(WiFi.localIP());
+}
+
+// Envoi des données JSON au serveur
+void sendData() {
+  // Reconnexion si le Wi-Fi est perdu
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("Wi-Fi perdu. Tentative de reconnexion...");
+    connectToWiFi();
+  }
+
+
+    float waterTemp = getWaterTemp();
+    float CompostTemp = getCompostTemp();
+    float CompostHumidity = getComposthumid();
+    int BatteryLevel = getBatterylevel();
+
+  // Construction du JSON
+  String postData = "{";
+  postData += "\"watertemp\":" + String(waterTemp, 1) + ",";
+  postData += "\"rate\":" + String(debit, 1) + ",";
+  postData += "\"composttemp\":" + String(CompostTemp, 1) + ",";
+  postData += "\"composthumid\":" + String(CompostHumidity, 1) + ",";
+  postData += "\"batterylevel\":" + String(BatteryLevel, 2);
+  postData += "}";
+
+  // Connexion au serveur
+  if (client.connect(server, port)) {
+    Serial.println("Connecté au serveur");
+
+    // Envoi de la requête POST
+    client.println("POST /api/update_data HTTP/1.1");
+    client.print("Host: ");
+    client.println(server);
+    client.println("Content-Type: application/json");
+    client.print("Content-Length: ");
+    client.println(postData.length());
+    client.println("Connection: close");
+    client.println();
+    client.println(postData);
+
+    // Lecture de la réponse
+    while (client.connected()) {
+      while (client.available()) {
+        String line = client.readStringUntil('\n');
+        Serial.println(line);
+      }
+    }
+
+    client.stop();
+    Serial.println("Déconnecté du serveur");
+  } else {
+    Serial.println("Erreur de connexion au serveur");
+  }
+}
 
 
 //initialisation de la carte
@@ -317,12 +442,10 @@ void setup() {
     pinMode(pinDebit, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(pinDebit), compterImpulsions, RISING);
 
-    
+    pinMode(7, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(7), changecommandpotmode, RISING);  
 
-    
-
-
-    
+    //connectToWiFi(); 
 
 }
 
@@ -330,32 +453,13 @@ void setup() {
 void loop() {
 
     
-    //ENVOYE DE LA TRAME VIA BT ET SUR LE SERIAL
-    Serial.println(trametx());
-    Serial1.print(trametx());
-    receiveDataFromApp();
-    reiceiveDataFromWeb();
 
-    getPotValue();
+    Serial.println(trametx()); //envoie de la trame sur le serie usb
+    BluetoothUpdate(); //envoie et reception des données bt
+    getPotValue(); //recuperer la valeure du potentiometre
+    UpdateScreen(); //mettre a jour l'ecran
     
     
-    
-    //AFFICHAGE DE LA TEMPERATURE DE L'EAU SUR L'ECRAN
-    String temperatureair = "temp eau = "+  String(getWaterTemp());
-    lcd.setCursor(0, 0);
-    lcd.print(temperatureair);
-
-
-    //AFFICHAGE DE LA TEMPERATURE DU COMPOST SUR L'ECRAN
-    String temperaturecomp = "temp comp = "+  String(getCompostTemp());
-    lcd.setCursor(0, 1);
-    lcd.print(temperaturecomp);
-
-
-    receiveDataFromApp();
-    //reiceiveDataFromWeb();
-
-
 
     unsigned long currentTime = millis();
     if (currentTime - lastTime >= 1000) {
@@ -371,33 +475,43 @@ void loop() {
     }
 
     float tempEau = getWaterTemp();
-
-
-    
-
-    
-    if (command == 1) {
-    if (tempEau <= newtemperature) {
-    // Si la température est inférieure ou égale au seuil et que la pompe est arrêtée
-    if (pompeEnMarche == false) {
-        pompeEnMarche = true; // Met à jour l'état
-        startPump(); // Démarre la pompe
-
-    }
-  } else {
-    // Si la température est au-dessus du seuil et que la pompe est en marche
-    if (pompeEnMarche == true) {
-        pompeEnMarche = false;  // Met à jour l'état
-        stopPump();           // Arrête la pompe
-    }
-  }
-    }
-  
-  
    
+    if (command == 1 && commandpoton == true) {
+        commandpoton = false; // On force commandpoton à false si les deux conditions sont vraies
+    }
 
-    
-    
-    
+    // Si command vaut 1, on utilise newtemperature
+    if (command == 1) {
+        if (tempEau <= newtemperature) {
+            if (!pompeEnMarche) {
+                pompeEnMarche = true;
+                startPump();
+            }
+        } else {
+            if (pompeEnMarche) {
+                pompeEnMarche = false;
+                stopPump();
+            }
+        }
+    }
+    // Sinon, si commandpoton est actif, on utilise commandepot
+    else if (commandpoton == true) {
+        if (tempEau <= commandepot) {
+            if (!pompeEnMarche) {
+                pompeEnMarche = true;
+                startPump();
+            }
+        } else {
+            if (pompeEnMarche) {
+                pompeEnMarche = false;
+                stopPump();
+            }
+        }
+    }
+
+
+        
+        
+        
 
 }
