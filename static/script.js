@@ -135,14 +135,21 @@ window.onload = () => {
         }
     });
 
-    setInterval(fetchAndUpdate, 1000);
+    setInterval(update, 1000);
 };
 
 function startSystem() {
+    
     fetch('/api/startpump', { method: 'POST' })
         .then(response => response.json())
         .then(data => {
             console.log('Pompe démarrée :', data);
+            const btn1 = document.getElementById('startButton');
+            btn1.style.backgroundColor = 'grey';
+            btn1.disabled = true;
+            const btn2 = document.getElementById('stopButton');
+            btn2.style.backgroundColor = 'red';
+            btn2.disabled = false;
             
         })
         .catch(error => {
@@ -151,12 +158,87 @@ function startSystem() {
         });
 }
 
+function setSystemToActiv() {
+    const btn1 = document.getElementById('startButton');
+    btn1.style.backgroundColor = 'grey';
+    btn1.disabled = true;
+    const btn2 = document.getElementById('stopButton');
+    btn2.style.backgroundColor = 'red';
+    btn2.disabled = false;
+}
+
+function setSystemToInnactiv() {
+    const btn1 = document.getElementById('startButton');
+    btn1.style.backgroundColor = 'green';
+    btn1.disabled = false;
+    const btn2 = document.getElementById('stopButton');
+    btn2.style.backgroundColor = 'grey';
+    btn2.disabled = true;
+}
+
+async function fetchPumpState() {
+    try {
+      const response = await fetch('/api/pumpstate');
+      if (!response.ok) {
+        throw new Error('Erreur HTTP : ' + response.status);
+      }
+      const data = await response.json();
+  
+      // Les données sont dans data.pumpstate_data
+      const pumpstate = data.pumpstate_data.pumpstate;
+      const commandwebon = data.pumpstate_data.commandwebon;
+      const commandweb = data.pumpstate_data.commandweb;
+  
+      const btn1 = document.getElementById('startButton');
+      if (pumpstate === 'off') {
+        btn1.style.backgroundColor = 'green';
+        btn1.disabled = false;
+      } else {
+        btn1.style.backgroundColor = 'grey';
+        btn1.disabled = true;
+      }
+  
+      const btn2 = document.getElementById('stopButton');
+      if (pumpstate === 'on') {
+        btn2.style.backgroundColor = 'red';
+        btn2.disabled = false;
+      } else {
+        btn2.style.backgroundColor = 'grey';
+        btn2.disabled = true;
+      }
+    
+    if (commandwebon) {
+        const checkbox = document.getElementById('commandCheckbox');
+        checkbox.checked = true;
+        document.getElementById('slider').disabled = true;
+        document.getElementById('slider').value = commandweb;
+        document.getElementById("sliderValue").textContent = commandweb;
+        
+    } else {
+        document.getElementById('slider').disabled = false;
+        const checkbox = document.getElementById('commandCheckbox');
+        checkbox.checked = false;
+    }
+  
+      return { pumpstate, commandwebon, commandweb };
+  
+    } catch (error) {
+      console.error('Erreur lors de la récupération de l\'API:', error);
+    }
+  }
+  
 // Fonction appelée quand on clique sur "Arrêter le système"
 function stopSystem() {
     fetch('/api/stoppump', { method: 'POST' })
         .then(response => response.json())
         .then(data => {
             console.log('Pompe arrêtée :', data);
+            const btn1 = document.getElementById('startButton');
+            btn1.style.backgroundColor = 'green';
+            btn1.disabled = false;
+            const btn2 = document.getElementById('stopButton');
+            btn2.style.backgroundColor = 'grey';
+            btn2.disabled = true;
             
         })
         .catch(error => {
@@ -164,6 +246,8 @@ function stopSystem() {
             alert("Erreur lors de l'arrêt !");
         });
 }
+
+
 
 // Fonction appelée à chaque mouvement du slider
 function updateSliderValue(value) {
@@ -189,4 +273,9 @@ function sendCommand() {
         console.error("Erreur lors de l'envoi de la commande :", error);
         alert("Erreur lors de l'arrêt !", error);
     });
+}
+
+function update() {
+    fetchPumpState();
+    fetchAndUpdate();
 }

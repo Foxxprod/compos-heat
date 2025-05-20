@@ -146,11 +146,14 @@
 
             <!-- Zone de contrôle à droite des gauges -->
             <div class="controls">
-                <button onclick="startSystem()" style="padding: 10px 16px; font-size: 14px; border-radius: 8px; background-color: green; color: white; border: none;">Lancer le système</button>
-                <button onclick="stopSystem()" style="padding: 10px 16px; font-size: 14px; border-radius: 8px; background-color: red; color: white; border: none;">Arrêter le système</button>
-                <label for="slider" class="slider-label">Commande : <span id="sliderValue">25</span>°C</label>
-                <input type="range" id="slider" min="10" max="40" value="25" oninput="updateSliderValue(this.value)">
-                <button onclick="sendCommand()" style="padding: 8px 14px; font-size: 14px; border-radius: 8px; background-color: #007bff; color: white; border: none;">Envoie commande</button>
+                <button id="startButton" onclick="startSystem()" style="padding: 10px 16px; font-size: 14px; border-radius: 8px; background-color: green; color: white; border: none;">Lancer le système</button>
+                <button id="stopButton" onclick="stopSystem()" style="padding: 10px 16px; font-size: 14px; border-radius: 8px; background-color: rgb(71, 68, 68); color: white; border: none;">Arrêter le système</button>
+                <label id="sliderLabel" for="slider" class="slider-label">Commande : <span id="sliderValue">25</span>°C</label>
+                <input id="slider" type="range" id="slider" min="10" max="40" value="25" oninput="updateSliderValue(this.value)">
+                <label for="commandCheckbox" style="font-size:14px; cursor:pointer;">
+                    <input type="checkbox" id="commandCheckbox" onchange="sendCommand()" />
+                    Envoie commande
+                  </label>
             </div>
         </div>
 

@@ -17,6 +17,21 @@ def read_data_from_json():
     except Exception as e:
         print(f"Erreur lors de la lecture du fichier JSON: {e}")
         return None
+    
+def read_control_data():
+    try:
+        with open("data/pump_state.json", "r") as file:
+            return json.load(file)
+    except:
+        return {
+            "pumpstate": "off",
+            "commandwebon": False,
+            "commandweb": False
+        }
+
+def write_control_data(data):
+    with open("data/pump_state.json", "w") as file:
+        json.dump(data, file, indent=4)
 
 @app.route('/')
 def index():
@@ -50,16 +65,19 @@ def api_temperatures():
 @app.route('/api/startpump', methods=['POST'])
 def api_startpump():
     try:
-        pass
+        data = read_control_data()
+        data["pumpstate"] = "on"
+        write_control_data(data)
         return jsonify({"status": "ok", "message": "Pompe démarrée"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-
 @app.route('/api/stoppump', methods=['POST'])
 def api_stoppump():
     try:
-        pass
+        data = read_control_data()
+        data["pumpstate"] = "off"
+        write_control_data(data)
         return jsonify({"status": "ok", "message": "Pompe arrêtée"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -68,12 +86,22 @@ def api_stoppump():
 @app.route('/api/command', methods=['POST'])
 def api_command():
     try:
-        data = request.get_json()
-        value = data.get('value')
+        req_data = request.get_json()
+        value = req_data.get("value")
+
         if value is None:
             return jsonify({"status": "error", "message": "Aucune valeur fournie"}), 400
 
-        return jsonify({"status": "ok", "message": f"Commande mise à jour à {value}"})
+        data = read_control_data()
+        data["commandweb"] = value
+        data["commandwebon"] = not data.get("commandwebon", False)
+
+        write_control_data(data)
+
+        return jsonify({
+            "status": "ok",
+            "message": f"commandweb mis à jour à {value}, commandwebon inversé à {data['commandwebon']}"
+        })
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -101,6 +129,14 @@ def api_update_data():
 
         return jsonify({"status": "ok", "message": "Données mises à jour", "data": data})
 
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+    
+@app.route('/api/pumpstate', methods=['GET'])
+def api_get_pumpstate():
+    try:
+        data = read_control_data()
+        return jsonify({"status": "ok", "pumpstate_data": data})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 

@@ -67,8 +67,8 @@ bool commandpoton = false;
 
 
 //WIFI
-char ssid[] = "SI-eleve";         // Nom du réseau Wi-Fi
-char pass[] = "AccessSI"; // Mot de passe du Wi-Fi
+char ssid[] = "mac_titouan";         // Nom du réseau Wi-Fi
+char pass[] = "123456789"; // Mot de passe du Wi-Fi
 
 char server[] = "composheat.cloud"; // Serveur
 int port = 80;                      // Port HTTP
@@ -375,20 +375,32 @@ void sendData() {
     connectToWiFi();
   }
 
+  // Récupération des données
+  float waterTemp = getWaterTemp();
+  float CompostTemp = getCompostTemp();
+  float CompostHumidity = getComposthumid();
+  int BatteryLevel = getBatterylevel();
+  float rate = debit;  // Assure-toi que 'debit' est bien défini quelque part
 
-    float waterTemp = getWaterTemp();
-    float CompostTemp = getCompostTemp();
-    float CompostHumidity = getComposthumid();
-    int BatteryLevel = getBatterylevel();
+  // Remplacement des NaN par -127
+  if (isnan(waterTemp))        waterTemp = -127;
+  if (isnan(CompostTemp))      CompostTemp = -127;
+  if (isnan(CompostHumidity))  CompostHumidity = -127;
+  if (isnan(rate))             rate = -127;
+  if (isnan(BatteryLevel))     BatteryLevel = -127;
 
   // Construction du JSON
   String postData = "{";
   postData += "\"watertemp\":" + String(waterTemp, 1) + ",";
-  postData += "\"rate\":" + String(debit, 1) + ",";
+  postData += "\"rate\":" + String(rate, 1) + ",";
   postData += "\"composttemp\":" + String(CompostTemp, 1) + ",";
   postData += "\"composthumid\":" + String(CompostHumidity, 1) + ",";
-  postData += "\"batterylevel\":" + String(BatteryLevel, 2);
+  postData += "\"batterylevel\": 100" ;
   postData += "}";
+
+  // Affichage pour débogage
+  Serial.println("Données envoyées :");
+  Serial.println(postData);
 
   // Connexion au serveur
   if (client.connect(server, port)) {
@@ -420,7 +432,73 @@ void sendData() {
   }
 }
 
+void getPumpStateFromAPI() {
+    if (client.connect(server, port)) {
+        Serial.println("Connexion au serveur réussie");
 
+        // Envoie de la requête HTTP GET
+        client.println("GET /api/pumpstate HTTP/1.1");
+        client.println("Host: composheat.cloud");
+        client.println("Connection: close");
+        client.println(); // Fin des headers
+
+        // Attente de réponse
+        unsigned long timeout = millis();
+        while (client.available() == 0) {
+            if (millis() - timeout > 5000) {
+                Serial.println(">>> Timeout !");
+                client.stop();
+                return;
+            }
+        }
+
+        // Lecture de la réponse ligne par ligne
+        bool jsonStarted = false;
+        String jsonString = "";
+        while (client.available()) {
+            String line = client.readStringUntil('\n');
+            if (line.startsWith("{")) {
+                jsonStarted = true;
+            }
+            if (jsonStarted) {
+                jsonString += line;
+            }
+        }
+
+        client.stop();
+
+        // Extraction manuelle des données
+        int cmdPos = jsonString.indexOf("\"commandweb\":");
+        int cmdonPos = jsonString.indexOf("\"commandwebon\":");
+        int statePos = jsonString.indexOf("\"pumpstate\":");
+
+        if (cmdPos != -1 && cmdonPos != -1 && statePos != -1) {
+            int commandweb = jsonString.substring(cmdPos + 13, jsonString.indexOf(",", cmdPos)).toInt();
+
+            String commandwebonStr = jsonString.substring(cmdonPos + 15, jsonString.indexOf(",", cmdonPos));
+            commandwebonStr.trim();
+            bool commandwebon = (commandwebonStr == "true");
+
+            int stateStart = jsonString.indexOf("\"", statePos + 12) + 1;
+            int stateEnd = jsonString.indexOf("\"", stateStart);
+            String pumpstateStr = jsonString.substring(stateStart, stateEnd);
+
+            if (commandwebon == true){
+                newtemperature = commandweb;
+                command = 1;
+            } else {
+                command = 0;
+
+            }
+
+
+        } else {
+            Serial.println("Erreur de parsing JSON");
+        }
+    } else {
+        Serial.println("Échec de connexion au serveur");
+    }
+}
 //initialisation de la carte
 void setup() {
     Serial.begin(9600);
@@ -445,7 +523,7 @@ void setup() {
     pinMode(7, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(7), changecommandpotmode, RISING);  
 
-    //connectToWiFi(); 
+    connectToWiFi(); 
 
 }
 
@@ -458,6 +536,8 @@ void loop() {
     BluetoothUpdate(); //envoie et reception des données bt
     getPotValue(); //recuperer la valeure du potentiometre
     UpdateScreen(); //mettre a jour l'ecran
+    sendData();
+    getPumpStateFromAPI();
     
     
 
