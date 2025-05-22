@@ -4,6 +4,7 @@ import threading
 import random
 import json
 import time
+import requests  # Pour envoyer les données à l'API
 
 serial_read_on = False
 
@@ -13,6 +14,8 @@ rate = -127
 composttemp = -127
 composthumid = -127
 batterylevel = 100
+
+API_URL = "http://composheat.cloud/api/update_data"  # URL de l'API
 
 def serial_read(port):
     ser = serial.Serial(port, 9600, timeout=1)
@@ -47,7 +50,6 @@ def receive_data_from_card(data):
     global watertemp, rate, composttemp, composthumid, batterylevel
 
     try:
-
         if data.startswith("TX") and data.endswith("$TX"):
             message = data[2:-3]  # Enlever 'TX' au début et '$TX' à la fin
         
@@ -55,88 +57,78 @@ def receive_data_from_card(data):
         data_dict = {}
 
         for part in data_parts:
-            if ":" in part:  # Vérifier si ':' est présent avant de diviser
-                key, value = part.split(":", 1)  # Diviser en clé et valeur
-                data_dict[key] = value  # Ajouter dans le dictionnaire avec la clé comme nom
+            if ":" in part:
+                key, value = part.split(":", 1)
+                data_dict[key] = value
 
-        
         try:
-            batterylevel = data_dict.get("batterylevel", None)
-            watertemp = data_dict.get("watertemp", None)
-            rate = data_dict.get("rate", None)
-            composttemp = data_dict.get("composttemp", None)
-            composthumid = data_dict.get("composthumid", None)
+            batterylevel = float(data_dict.get("batterylevel", -127))
+            watertemp = float(data_dict.get("watertemp", -127))
+            rate = float(data_dict.get("rate", -127))
+            composttemp = float(data_dict.get("composttemp", -127))
+            composthumid = float(data_dict.get("composthumid", -127))
 
-            # Sauvegarde des données dans un fichier JSON
-            save_data_to_json()
+            # Envoi des données à l'API
+            send_data_to_api()
 
         except ValueError:
-            batterylevel = -127
-            watertemp = -127
-            rate = -127
-            composttemp = -127
-            composthumid = -127
-            print("Impossible de lire les données reçues depuis la carte du compost, affectation des valeurs par défaut")
+            batterylevel = watertemp = rate = composttemp = composthumid = -127
+            print("Valeurs invalides, valeurs par défaut utilisées.")
         
     except Exception as e:
-        print("Erreur lors de la récupération des données depuis le module compost:", e)
-
+        print("Erreur lors de la récupération des données:", e)
 
 def get_card_data():
-    global watertemp, rate, composttemp, composthumid, batterylevel
-
     return watertemp, rate, composttemp, composthumid, batterylevel
 
-
 def get_card_data_test():
-    global watertemp, pooltemp, composttemp, composthumid, batterylevel
+    global watertemp, composttemp, composthumid, batterylevel
 
-    # Générer des données aléatoires dans des plages réalistes
-    watertemp = round(random.uniform(15, 30), 2)  # Température de l'eau entre 15°C et 30°C
-    pooltemp = round(random.uniform(18, 28), 2)   # Température de la piscine entre 18°C et 28°C
-    composttemp = round(random.uniform(20, 60), 2) # Température du compost entre 20°C et 60°C
-    composthumid = round(random.uniform(30, 80), 2) # Humidité du compost entre 30% et 80%
-    batterylevel = round(random.uniform(20, 100), 2) # Niveau de la batterie entre 20% et 100%
+    watertemp = round(random.uniform(15, 30), 2)
+    composttemp = round(random.uniform(20, 60), 2)
+    composthumid = round(random.uniform(30, 80), 2)
+    batterylevel = round(random.uniform(20, 100), 2)
+    rate = round(random.uniform(0, 1), 2)
 
-    return watertemp, pooltemp, composttemp, composthumid, batterylevel
+    return watertemp, composttemp, composthumid, batterylevel, rate
 
 def startpump():
     global rate, ser
     if rate == 0:
-        command = "startpump"
-        ser.write(command.encode('ascii'))
-        
+        ser.write("startpump".encode('ascii'))
 
 def stoppump():
     global rate, ser
     if rate > 0:
-        command = "stoppump"
-        ser.write(command.encode('ascii'))
+        ser.write("stoppump".encode('ascii'))
 
 def updatecommand(value):
-    global rate, ser
+    global ser
     command = f"updatecommand:{value}"
     ser.write(command.encode('ascii'))
 
-def save_data_to_json():
-    data_dict = {
+def send_data_to_api():
+    data = {
         "watertemp": watertemp,
         "rate": rate,
         "composttemp": composttemp,
         "composthumid": composthumid,
         "batterylevel": batterylevel
     }
-    
+
     try:
-        with open("data/card_data.json", "w") as json_file:
-            json.dump(data_dict, json_file, indent=4)
-        print("Données enregistrées dans card_data.json")
+        response = requests.post(API_URL, json=data)
+        if response.status_code == 200:
+            print("Données envoyées à l'API avec succès")
+        else:
+            print(f"Échec de l'envoi. Code {response.status_code} : {response.text}")
     except Exception as e:
-        print("Erreur lors de l'enregistrement dans le fichier JSON:", e)
+        print("Erreur lors de l'envoi des données à l'API:", e)
 
 if __name__ == "__main__":
-    start_serial_read('/dev/tty.usbmodem143201')
-    startpump()
+    #start_serial_read('/dev/tty.usbmodem143201')
     while True:
-        print(get_card_data())
-        time.sleep(1)
+        get_card_data() #recuperer les données de la carte via les variables
+        send_data_to_api() #envoyer les données a l'api composheat.cloud/api/update_data
+        print("Données mise a jour depuis la carte vers le serveur web")
+        time.sleep(2) # Attendre 1 seconde avant de lire les données de nouveau
